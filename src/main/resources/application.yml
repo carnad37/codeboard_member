@@ -1,6 +1,14 @@
+#spring:
+#  datasource:
+#    driver-class-name: org.mariadb.jdbc.Driver
+#    url: jdbc:mariadb://localhost:33660/codeboard?serverTimezone=UTC
+#    username: root
+#    password: testdb#
 spring:
-  datasource:
-    driver-class-name: org.mariadb.jdbc.Driver
-    url: jdbc:mariadb://localhost:33660/codeboard?serverTimezone=UTC
+  r2dbc:
+    url: r2dbc:mariadb://193.168.123.2:33660
     username: root
     password: testdb#
+    name: member
+server:
+  port: 10098

@@ -26,10 +26,12 @@ public class WebSecurityConfig {
     @Bean
     public SecurityWebFilterChain filter(ServerHttpSecurity http) throws Exception {
         http.authorizeExchange()
-                .pathMatchers("/**").denyAll()
-                .pathMatchers("/gw/**", "/msa/**").permitAll()
-                .pathMatchers("/api").authenticated()
+                .pathMatchers("/**").permitAll()
+//                .pathMatchers("/**").denyAll()
+//                .pathMatchers("/gw/**", "/msa/**").permitAll()
+//                .pathMatchers("/api").authenticated()
                 .and()
+                .csrf().disable()
                 .formLogin().disable()
                 .httpBasic().disable()
                 .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())

@@ -1,6 +1,6 @@
 package com.hhs.codeboard.member.conf.security;
 
-import com.hhs.codeboard.member.dto.User;
+import com.hhs.codeboard.member.data.User;
 import com.hhs.codeboard.member.enumeration.SecurityHeader;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

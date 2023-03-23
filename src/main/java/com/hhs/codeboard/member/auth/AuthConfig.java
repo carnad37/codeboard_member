@@ -1,6 +1,6 @@
 package com.hhs.codeboard.member.auth;
 
-import com.hhs.codeboard.member.dto.User;
+import com.hhs.codeboard.member.data.User;
 import com.hhs.codeboard.member.expt.InitiationFailPemkey;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
@@ -27,23 +27,23 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class AuthConfig {
 
-    @Value("${codeboard.access.token.key.size}")
+    @Value("${codeboard.access.token.key.size:256}")
     private Integer keySize = 256;
 
 //    난수토큰 사용안함. 디폴트를 redis + jwt로함
 //    @Value("${codeboard.access.type:JWT}")
 //    private AuthTokenType authType;
 
-    @Value("codeboard.access.token.key.algorithm")
-    private AlgorithmSupporter.AlgorithmType algorithm;
+//    @Value("codeboard.access.token.key.algorithm:HS")
+    private AlgorithmSupporter.AlgorithmType algorithm = AlgorithmSupporter.AlgorithmType.HS;
 
-    @Value("${codeboard.access.token.key.public}")
+    @Value("${codeboard.access.token.key.public:/}")
     private String publicKeyPath;
 
-    @Value("${codeboard.access.token.key.private}")
+    @Value("${codeboard.access.token.key.private:/}")
     private String privateKeyPath;
 
-    @Value("${codeboard.access.token.hmac.key}")
+    @Value("${codeboard.access.token.hmac.key:secretKey}")
     private String secretKey;
 
     @Bean

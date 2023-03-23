@@ -1,7 +1,11 @@
-package com.hhs.codeboard.member.web;
+package com.hhs.codeboard.member.web.controller;
 
-import com.hhs.codeboard.member.dto.AuthDto;
-import com.hhs.codeboard.member.dto.User;
+import com.hhs.codeboard.member.data.AuthDto;
+import com.hhs.codeboard.member.data.User;
+import com.hhs.codeboard.member.data.user.dto.UserInfoDto;
+import com.hhs.codeboard.member.web.service.UserInfoService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,14 +19,15 @@ import reactor.core.publisher.Mono;
 @RestController
 public class LoginController {
 
-    @PostMapping("/login")
-    public Mono<ResponseEntity<String>> login(User user) {
-        // 전달된 정보로 로그인을 진행
+    @Autowired
+    private UserInfoService userInfoService;
 
+    @PostMapping("/login")
+    public Mono<UserInfoDto> login(User user) {
+        // 전달된 정보로 로그인을 진행
         // 쿠키굽고, Response에 accesstoken 담아감
 
-
-        return null;
+        return userInfoService.selectUser(Long.parseLong(user.getUserSeq()));
     }
 
 

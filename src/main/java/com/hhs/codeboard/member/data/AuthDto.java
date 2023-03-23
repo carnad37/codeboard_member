@@ -1,4 +1,4 @@
-package com.hhs.codeboard.member.dto;
+package com.hhs.codeboard.member.data;
 
 import lombok.Getter;
 import lombok.Setter;
