@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Setter
 public class UserInfoDto {
 
-    private Long seq;
+    private String email;
 
     private String nickname;
 
@@ -17,7 +17,7 @@ public class UserInfoDto {
 
     private String userType;
 
-    private int modUserSeq;
+    private String modUser;
 
     private LocalDateTime regDate;
 

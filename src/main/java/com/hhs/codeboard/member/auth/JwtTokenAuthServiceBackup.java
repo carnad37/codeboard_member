@@ -35,7 +35,7 @@ import java.util.Optional;
 /**
  * 동적으로 생성되므로 따로 Bean으로 등록하지 않는다.
  */
-public class JwtTokenAuthService implements TokenAuthService {
+public class JwtTokenAuthServiceBackup implements TokenAuthService {
 
     private Algorithm algorithm;
     private AlgorithmSupporter.AlgorithmType algorithmType = AlgorithmSupporter.AlgorithmType.RS;
@@ -55,7 +55,7 @@ public class JwtTokenAuthService implements TokenAuthService {
      * @param algorithmDto
      * @throws NoSuchAlgorithmException
      */
-    public JwtTokenAuthService(AlgorithmSupporter.AlgorithmDto algorithmDto, WebClient userClient, ReactiveRedisOperations<String, User> redisOperations) throws NoSuchAlgorithmException {
+    public JwtTokenAuthServiceBackup(AlgorithmSupporter.AlgorithmDto algorithmDto, WebClient userClient, ReactiveRedisOperations<String, User> redisOperations) throws NoSuchAlgorithmException {
         if (algorithmDto.getSize() != null && algorithmDto.getType() != null) {
             // 기존키 사용
             this.algorithmType = algorithmDto.getType();
@@ -170,19 +170,17 @@ public class JwtTokenAuthService implements TokenAuthService {
     @Override
     public UserInfoDto authentication(String accessToken, String refreshToken) {
         DecodedJWT decodedJWT;
-        UserInfoDto userInfoDto = new UserInfoDto();
         try {
             decodedJWT = verifier.verify(accessToken);
             if (Instant.now().isAfter(decodedJWT.getIssuedAtAsInstant().plus(30, ChronoUnit.MINUTES))) {
-                // 토큰 정보 파싱
-                userInfoDto.setEmail(decodedJWT.getSubject());
-
-//                Mono<AuthDto> authMono = this.getUserAndRefreshToken(this.getUserSeq(decodedJWT), refreshToken);
-//                authMono.subscribe((mono)-> {
-//                    mono.setAccessToken(this.getToken(mono.getUser()));
-//                    // 로그인 진행
-//                    this.setUserInfo(mono, request, response);
-//                });
+                // 만료가 된 토큰일 경우
+                // => 리프래시 토큰을 사용해서 다시 accessToken을 발급한다.
+                Mono<AuthDto> authMono = this.getUserAndRefreshToken(this.getUserSeq(decodedJWT), refreshToken);
+                authMono.subscribe((mono)-> {
+                    mono.setAccessToken(this.getToken(mono.getUser()));
+                    // 로그인 진행
+                    this.setUserInfo(mono, request, response);
+                });
             } else {
                 // 유효한 토큰일경우
                 Mono<User> userMono = redisUserOperation.opsForValue().get(this.getUserSeq(decodedJWT));
@@ -192,14 +190,14 @@ public class JwtTokenAuthService implements TokenAuthService {
             // 인증 오류가 있는 토큰일 경우
             // => 403오류로 에러페이지로 전송시킴
             response.setStatusCode(HttpStatus.FORBIDDEN);
-            userInfoDto = new UserInfoDto();
         }
 
     }
 
     /**
-     * accessToken을 파싱해서, 유저정보를 획득하고
-     * 로그인을 진행한다.
+     * accessToken이 있는경우의 로직
+     * GW 기준의 로직
+     * 헤더에다가 인증정보를 담아서 보낸다.
      *
      * @param accessToken
      * @param request
@@ -265,6 +263,28 @@ public class JwtTokenAuthService implements TokenAuthService {
         // 회원정보와 refresh토큰을 담아서 응답받음
         return this.userClient.post()
                 .uri("/gw/login")
+                .body(auth, AuthDto.class)
+                .retrieve()
+                .bodyToMono(AuthDto.class);
+    }
+
+    /**
+     * Member module에서 유저정보 획득
+     * @param userSeq
+     * @param refreshToken
+     * @return
+     */
+    private Mono<AuthDto> getUserAndRefreshToken(String userSeq, String refreshToken) {
+        AuthDto auth = new AuthDto();
+
+        User user = new User();
+        user.setUserSeq(userSeq);
+
+        auth.setUser(user);
+        auth.setRefreshToken(refreshToken);
+
+        return this.userClient.post()
+                .uri("/gw/refresh")
                 .body(auth, AuthDto.class)
                 .retrieve()
                 .bodyToMono(AuthDto.class);

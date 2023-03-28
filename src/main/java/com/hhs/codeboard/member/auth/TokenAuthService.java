@@ -1,5 +1,6 @@
 package com.hhs.codeboard.member.auth;
 
+import com.hhs.codeboard.member.data.user.dto.UserInfoDto;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
@@ -15,11 +16,24 @@ public interface TokenAuthService {
     void login(ServerWebExchange exchange);
 
     /**
-     * 토큰을 통해 인증이 이루워짐.
-     * 토큰 파싱을 해도좋고, 토큰으로 redis든 rdb든 어떻게든 인증로직 구현하면됨.
+     * 인가
+     * 토큰을 통해 인증이 이루어지며,
+     * 인증된 정보를 헤더및 쿠키에 담아줌.
+     *
+     * Gateway에서 사용하는게 바람직.
      * @param exchange
      * @return
      */
-    void authorized(ServerWebExchange exchange);
+    void authorization(ServerWebExchange exchange);
+
+    /**
+     * 인증
+     * 토큰을 통해 인증이 이루어지며,
+     * 인증된 정보를 헤더및 쿠키에 담아줌.
+     * @param token
+     * @return
+     */
+    UserInfoDto authentication(String accessToken, String refreshToken);
+
 
 }
