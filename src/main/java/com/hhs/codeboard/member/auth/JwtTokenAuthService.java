@@ -31,6 +31,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * 동적으로 생성되므로 따로 Bean으로 등록하지 않는다.
@@ -40,7 +41,7 @@ public class JwtTokenAuthService implements TokenAuthService {
     private Algorithm algorithm;
     private AlgorithmSupporter.AlgorithmType algorithmType = AlgorithmSupporter.AlgorithmType.RS;
     private AlgorithmSupporter.AlgorithmKeySize algorithmKeySize = AlgorithmSupporter.AlgorithmKeySize._384;
-    private ReactiveRedisOperations<String, User> redisUserOperation;
+    private ReactiveRedisOperations<String, String> redisUserOperation;
     private WebClient userClient;
     private Map<String, Object> header;
     private JWTVerifier verifier;
@@ -48,6 +49,8 @@ public class JwtTokenAuthService implements TokenAuthService {
 
     private String accessTokenName = "CB_AT";
     private String refreshTokenName = "CB_RT";
+
+    private final AuthDto EMPTY_AUTH = new AuthDto();
 
     /**
      * 코드상에서 key 생성
@@ -92,60 +95,41 @@ public class JwtTokenAuthService implements TokenAuthService {
                 .build();
     }
 
-    public String getToken(User user) {
-        // 토큰 생성
-        return JWT.create().withHeader(this.header)
-                .withIssuer("codeboard")
-                .withSubject("access_token")
-                .withAudience(user.getEmail())
-                .withIssuedAt(Instant.now().atZone(this.zoneId).toInstant())
-                .sign(algorithm);
-    }
-
-//    @Override
-//    public Mono<String> getRefreshToken(User user) throws NoSuchAlgorithmException {
-//        MessageDigest md = MessageDigest.getInstance("SHA-256");
-//        return Mono.just(
-//                String.format("%064x", new BigInteger(
-//                        md.digest(UUID.randomUUID().toString().replaceAll("-","").getBytes()))
-//                )
-//        );
-//    }
 
     @Override
-    public void login(ServerWebExchange exchange) {
-        ServerHttpRequest request = exchange.getRequest();
-        ServerHttpResponse response = exchange.getResponse();
+    public Mono<String> getAccessToken(String email) {
+        // 토큰 생성
+        return Mono.fromSupplier(()->JWT.create().withHeader(this.header)
+                .withSubject(email)
+                .withIssuedAt(Instant.now().atZone(this.zoneId).toInstant())
+                .sign(algorithm));
+    }
 
-        MultiValueMap<String, String> paramMap = request.getQueryParams();
+    @Override
+    public Mono<String> getRefreshToken(String email) {
+        String refreshToken = UUID.randomUUID().toString().replaceAll("-", "");
+        return redisUserOperation.opsForValue().set(refreshToken, email, Duration.ofDays(7))
+                .map((bool)->{
+                    if (bool) {
+                        return refreshToken;
+                    } else {
+                        return null;
+                    }
+                });
+    }
 
-        //토큰 체크
-        Optional<String> accessToken = Optional.ofNullable(request.getCookies())
-                .map(cookieMap -> cookieMap.getFirst(this.accessTokenName))
-                .map(cookie -> cookie.getValue());
-
-        if (!accessToken.isPresent()) {
-            User user = new User();
-            user.setEmail(paramMap.get("email").get(0));
-            user.setEmail(paramMap.get("passwd").get(0));
-
-            // TODO :: 오류 가능성
-            //  현재 로그인 중인경우 (토큰값이 포함) -> 토큰인증 시행. 문제가 있을경우 재로그인 진행.
-            //  로그인에 실패했을경우 -> 403 에러
-
-            // 이메일 & 비밀번호
-            // 리프레시 토큰 + 유저정보 받음
-            Mono<AuthDto> authMono = this.findUserInfo(user.getEmail(), user.getPassword());
-            authMono.subscribe(mono->{
-                mono.setAccessToken(this.getToken(mono.getUser()));
-                //로그인 진행
-                this.setUserInfo(mono, request, response);
-            });
-
-        } else {
-            // 토큰 등록
-            this.tokenProcess(accessToken.get(), request, response);
-        }
+    /**
+     * 로그인시 요청처리
+     * @param exchange
+     */
+    @Override
+    public Mono<AuthDto> tokenProcess(String email) {
+        // 회원정보 조
+//        return Mono.fromSupplier(()->{
+//          AuthDto authDto = new AuthDto();
+//          authDto.setAccessToken(this.getAccessToken(email));
+//          authDto.setRefreshToken(UUID.randomUUID().toString());
+//        });
     }
 
 
@@ -167,130 +151,51 @@ public class JwtTokenAuthService implements TokenAuthService {
                 .ifPresent((accessTokenCookie)->this.tokenProcess(accessTokenCookie.getValue(), request, response));
     }
 
-    @Override
-    public UserInfoDto authentication(String accessToken, String refreshToken) {
-        DecodedJWT decodedJWT;
-        UserInfoDto userInfoDto = new UserInfoDto();
-        try {
-            decodedJWT = verifier.verify(accessToken);
-            if (Instant.now().isAfter(decodedJWT.getIssuedAtAsInstant().plus(30, ChronoUnit.MINUTES))) {
-                // 토큰 정보 파싱
-                userInfoDto.setEmail(decodedJWT.getSubject());
-
-//                Mono<AuthDto> authMono = this.getUserAndRefreshToken(this.getUserSeq(decodedJWT), refreshToken);
-//                authMono.subscribe((mono)-> {
-//                    mono.setAccessToken(this.getToken(mono.getUser()));
-//                    // 로그인 진행
-//                    this.setUserInfo(mono, request, response);
-//                });
-            } else {
-                // 유효한 토큰일경우
-                Mono<User> userMono = redisUserOperation.opsForValue().get(this.getUserSeq(decodedJWT));
-                userMono.subscribe(mono->this.setUserInfoInHeader(mono, request));
-            }
-        } catch (JWTVerificationException ne) {
-            // 인증 오류가 있는 토큰일 경우
-            // => 403오류로 에러페이지로 전송시킴
-            response.setStatusCode(HttpStatus.FORBIDDEN);
-            userInfoDto = new UserInfoDto();
-        }
-
-    }
-
     /**
-     * accessToken을 파싱해서, 유저정보를 획득하고
-     * 로그인을 진행한다.
-     *
+     * 인증처리
      * @param accessToken
-     * @param request
-     * @param response
+     * @param refreshToken
+     * @return
      */
-    private void tokenProcess(String accessToken,  ServerHttpRequest request,  ServerHttpResponse response) {
+    @Override
+    public Mono<AuthDto> authentication(String accessToken, String refreshToken) {
         DecodedJWT decodedJWT;
+        String principle = null;
         try {
             decodedJWT = verifier.verify(accessToken);
-            if (Instant.now().isAfter(decodedJWT.getIssuedAtAsInstant().plus(30, ChronoUnit.MINUTES))) {
-                // 만료가 된 토큰일 경우
-                // => 리프래시 토큰을 사용해서 다시 accessToken을 발급한다.
-                String refreshToken = Optional.ofNullable(request.getCookies())
-                        .map(cookies -> cookies.getFirst(refreshTokenName))
-                        .orElseThrow()
-                        .getValue();
-
-                Mono<AuthDto> authMono = this.getUserAndRefreshToken(this.getUserSeq(decodedJWT), refreshToken);
-                authMono.subscribe((mono)-> {
-                    mono.setAccessToken(this.getToken(mono.getUser()));
-                    // 로그인 진행
-                    this.setUserInfo(mono, request, response);
-                });
-            } else {
-                // 유효한 토큰일경우
-                Mono<User> userMono = redisUserOperation.opsForValue().get(this.getUserSeq(decodedJWT));
-                userMono.subscribe(mono->this.setUserInfoInHeader(mono, request));
-            }
-        } catch (JWTVerificationException ne) {
-            // 인증 오류가 있는 토큰일 경우
-            // => 403오류로 에러페이지로 전송시킴
-            response.setStatusCode(HttpStatus.FORBIDDEN);
+            principle = decodedJWT.getSubject();
+        } catch (JWTVerificationException je) {
+            return Mono.just(EMPTY_AUTH);
         }
+        // 파싱한 토큰의 정보로 만료된 토큰인지 위조된 토큰인지를 확인한다.
+        // 생성된지 30분 이상된 토큰인지 확인
+        if (!Instant.now().isAfter(decodedJWT.getIssuedAtAsInstant().plus(30, ChronoUnit.MINUTES))) {
+            // 만료된 accessToken일경우, refresh토큰으로 체크
+            return redisUserOperation.opsForValue().get(refreshToken)
+                .flatMap(email-> Mono.zip(this.getAccessToken(email), this.getRefreshToken(email))
+                    .flatMap(tup->
+                        Mono.fromSupplier(()->{
+                            AuthDto authDto = new AuthDto();
+                            authDto.setAccessToken(tup.getT1());
+                            authDto.setRefreshToken(tup.getT2());
+                            return authDto;
+                        })
+                    )
+                );
+        }
+        // 회원정보를 담아서 리턴
+        return Mono.fromSupplier(()->{
+            AuthDto autoDto = new AuthDto();
+            autoDto.setEmail(decodedJWT.getSubject());
+        });
+
     }
 
-    private void setUserInfo (AuthDto auth, ServerHttpRequest request, ServerHttpResponse response) {
-        // 유저 정보 레디스 저장
-        this.redisUserOperation.opsForValue().set(auth.getUser().getUserSeq(), auth.getUser());
-//        this.setUserInfoInHeader(auth.getUser(), request.getHeaders());
-        // 토큰 쿠키 생성
-        this.bakeTokenCookie(auth.getAccessToken(), auth.getRefreshToken(), response);
-    }
 
     protected enum JWTheader {
         typ, alg;
     }
 
-    /**
-     * Member module에서 유저정보 획득
-     * @param userKey
-     * @param password
-     * @return
-     */
-    private Mono<AuthDto> findUserInfo(String userKey, String password) {
-        AuthDto auth = new AuthDto();
-
-        User user = new User();
-        user.setEmail(userKey);
-        user.setPassword(password);
-
-        auth.setUser(user);
-
-        // 회원정보와 refresh토큰을 담아서 응답받음
-        return this.userClient.post()
-                .uri("/gw/login")
-                .body(auth, AuthDto.class)
-                .retrieve()
-                .bodyToMono(AuthDto.class);
-    }
-
-    /**
-     * 액세스 토큰 만료시 refresh 및 유저정보를 함께담아서 확인.
-     * @param refreshToken
-     * @param accessToken
-     * @return
-     */
-    private Mono<AuthDto> findUserInfoByUserRefreshToken(String userSeq, String accessToken, String refreshToken) {
-        AuthDto auth = new AuthDto();
-
-        User user = new User();
-        user.setUserSeq(userSeq);
-
-        auth.setUser(user);
-        auth.setAccessToken(accessToken);
-        auth.setRefreshToken(refreshToken);
-        return this.userClient.post()
-                .uri("/gw/refresh")
-                .body(auth, AuthDto.class)
-                .retrieve()
-                .bodyToMono(AuthDto.class);
-    }
 
     private String getUserSeq(DecodedJWT decodedJWT) {
         return decodedJWT.getAudience().get(0);

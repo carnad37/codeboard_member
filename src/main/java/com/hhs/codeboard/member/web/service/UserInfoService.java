@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class UserInfoService {
+public class UserInfoService implements UserInterface{
 
     private final UserInfoRepository userInfoRepo;
 
@@ -75,5 +75,8 @@ public class UserInfoService {
         return modelMapper.map(userInfoEntity, UserInfoDto.class);
     }
 
-
+    @Override
+    public Mono<UserInfoEntity> login(String email, String passwd) {
+        return userInfoRepo.findByEmail(email);;
+    }
 }
