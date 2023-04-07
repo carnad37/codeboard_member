@@ -1,8 +1,10 @@
 package com.hhs.codeboard.member.conf.security;
 
+import com.hhs.codeboard.member.auth.TokenAuthService;
 import com.hhs.codeboard.member.conf.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
@@ -12,6 +14,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
 
 @Configuration
+@DependsOn("authConfig")
 @EnableWebFluxSecurity
 public class WebSecurityConfig {
 
@@ -30,18 +33,19 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public SecurityWebFilterChain filter(ServerHttpSecurity http) throws Exception {
+    public SecurityWebFilterChain filter(ServerHttpSecurity http, TokenAuthService tokenAuthService) throws Exception {
         http.authorizeExchange()
-                .pathMatchers("/**").permitAll()
-//                .pathMatchers("/**").denyAll()
-//                .pathMatchers("/gw/**", "/msa/**").permitAll()
+//                .pathMatchers("/**").permitAll()
+                .pathMatchers("/private/**").authenticated()
+                .pathMatchers("/public/**").permitAll()
+                .pathMatchers("/**").denyAll()
 //                .pathMatchers("/api").authenticated()
                 .and()
                 .csrf().disable()
                 .formLogin().disable()
                 .httpBasic().disable()
                 .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
-                .addFilterAt(new JwtAuthFilter(), SecurityWebFiltersOrder.HTTP_BASIC);
+                .addFilterAt(new JwtAuthFilter(tokenAuthService), SecurityWebFiltersOrder.HTTP_BASIC);
 
 //        http.authorizeRequests()
 //                .requestMatchers("/**").denyAll()

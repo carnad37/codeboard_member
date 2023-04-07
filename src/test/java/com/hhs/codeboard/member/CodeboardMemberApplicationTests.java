@@ -33,6 +33,8 @@ class CodeboardMemberApplicationTests {
 		userInfoRepository.findById((long)1);
 	}
 
+
+
 //	@Test
 //	void loginTest() throws Exception{
 //

@@ -1,6 +1,8 @@
 package com.hhs.codeboard.member.web.service;
 
+import com.hhs.codeboard.member.auth.JwtTokenAuthService;
 import com.hhs.codeboard.member.auth.TokenAuthService;
+import com.hhs.codeboard.member.data.AuthDto;
 import com.hhs.codeboard.member.data.repository.UserInfoRepository;
 import com.hhs.codeboard.member.data.user.dto.UserInfoDto;
 import com.hhs.codeboard.member.data.user.dto.request.UserInfoRequest;
@@ -30,18 +32,34 @@ public class UserInfoService implements UserInterface{
 
     private final R2dbcEntityTemplate template;
 
-    public Mono<UserInfoDto> selectUser(String email, String passwd) throws Exception {
+    public Mono<AuthDto> loginUser(String email, String passwd) throws Exception {
         // 1차 조회시 redis를 조회 (refresh token 만료전까지)
         // 조회결과가 없거나, 조회된 토큰이 만료되었을 수가 있음.
         // 만약 없을경우 DB조회
         return userInfoRepo.findByEmail(email)
-            .mapNotNull(entity->{
+            .flatMap(entity->{
                 if (passwordEncoder.matches(passwd, entity.getPasswd())) {
-                    return this.toDTO(entity);
+                    return Mono.zip(tokenAuthService.getAccessToken(entity.getEmail()), tokenAuthService.getRefreshToken(entity.getEmail()))
+                        .map(tup-> AuthDto.builder()
+                            .email(entity.getEmail())
+                            .accessToken(tup.getT1())
+                            .refreshToken(tup.getT2())
+                            .build()
+                        );
                 } else {
-                    return new UserInfoDto();
+                    return Mono.fromSupplier(()->AuthDto.builder()
+                            .message("not find user")
+                            .build());
                 }
             });
+    }
+
+    public Mono<UserInfoDto> selectUser(String email) throws Exception {
+        // 1차 조회시 redis를 조회 (refresh token 만료전까지)
+        // 조회결과가 없거나, 조회된 토큰이 만료되었을 수가 있음.
+        // 만약 없을경우 DB조회
+        return userInfoRepo.findByEmail(email)
+                .map(entity -> toDTO(entity));
     }
 
 //    public Mono<UserInfoDto> selectUserByToken(String token) throws Exception {
@@ -77,6 +95,6 @@ public class UserInfoService implements UserInterface{
 
     @Override
     public Mono<UserInfoEntity> login(String email, String passwd) {
-        return userInfoRepo.findByEmail(email);;
+        return userInfoRepo.findByEmail(email);
     }
 }

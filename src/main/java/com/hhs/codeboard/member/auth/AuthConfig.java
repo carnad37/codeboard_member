@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.ReactiveRedisOperations;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
@@ -29,6 +30,12 @@ public class AuthConfig {
 
     @Value("${codeboard.access.token.key.size:256}")
     private Integer keySize = 256;
+
+    @Value("${spring.reactive.redis.host:localhost}")
+    private String redisHost;
+
+    @Value("${spring.reactive.redis.host:6379}")
+    private Integer redisPort;
 
 //    난수토큰 사용안함. 디폴트를 redis + jwt로함
 //    @Value("${codeboard.access.type:JWT}")
@@ -68,10 +75,10 @@ public class AuthConfig {
      * @return
      */
     @Bean
-    public ReactiveRedisOperations<String, User> redisUserOperations(ReactiveRedisConnectionFactory factory) {
+    public ReactiveRedisOperations<String, String> redisUserOperations(ReactiveRedisConnectionFactory factory) {
         RedisSerializer<String> serializer = new StringRedisSerializer();
-        Jackson2JsonRedisSerializer jsonRedisSerializer = new Jackson2JsonRedisSerializer<>(User.class);
-        RedisSerializationContext<String, User> serializationContext = RedisSerializationContext
+        Jackson2JsonRedisSerializer jsonRedisSerializer = new Jackson2JsonRedisSerializer<>(String.class);
+        RedisSerializationContext<String, String> serializationContext = RedisSerializationContext
                 .<String, String>newSerializationContext()
                 .key(serializer)
                 .value(jsonRedisSerializer)
@@ -87,7 +94,7 @@ public class AuthConfig {
      * 만일 추가될경우 분기두고 TokenAuthService 구현체로 추가구현만 하면됨.
      */
     @Bean
-    public TokenAuthService tokenAuthService(WebClient userClient, ReactiveRedisOperations<String, User> redisUserOperations) {
+    public TokenAuthService tokenAuthService(WebClient userClient, ReactiveRedisOperations<String, String> redisUserOperations) {
         AlgorithmSupporter.AlgorithmKeySize keySize = AlgorithmSupporter.AlgorithmKeySize.findBySize(this.keySize);
         AlgorithmSupporter.AlgorithmDto algorithmDto =
                 new AlgorithmSupporter.AlgorithmDto(secretKey, publicKeyPath, privateKeyPath, this.algorithm, keySize);
