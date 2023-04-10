@@ -5,6 +5,7 @@ import com.hhs.codeboard.member.data.AuthDto;
 import com.hhs.codeboard.member.data.User;
 import com.hhs.codeboard.member.enumeration.SecurityHeader;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -26,6 +27,8 @@ import java.util.stream.Collectors;
 /**
  * Header 에서 인증정보를 확인하는 로직
  */
+
+@Slf4j
 @RequiredArgsConstructor
 public class JwtAuthFilter implements WebFilter {
 
@@ -33,14 +36,19 @@ public class JwtAuthFilter implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        Consumer<AuthDto> loginProcess = (authDto) -> {
-//            List<GrantedAuthority> authList = user.getAuthList().stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
-            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(authDto, null, null);
-            ReactiveSecurityContextHolder.withAuthentication(auth);
-        };
+        Consumer<AuthDto> loginProcess = null;
 
-        return tokenAuthService.authentication(exchange, loginProcess)
-                .flatMap((jwt)->chain.filter(exchange));
+        return tokenAuthService.authentication(exchange)
+                .filter(authDto -> StringUtils.hasText(authDto.getEmail()))
+                .mapNotNull(authDto -> {
+                    log.info("filter email : {}",authDto.getEmail());
+                    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(authDto, null, null);
+                    ReactiveSecurityContextHolder.withAuthentication(auth);
+                    return auth;
+                })
+                .flatMap(authenticationToken->chain.filter(exchange)
+                        .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authenticationToken))
+                ).switchIfEmpty(chain.filter(exchange));
     }
 
 }

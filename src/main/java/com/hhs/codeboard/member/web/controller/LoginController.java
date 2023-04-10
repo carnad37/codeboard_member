@@ -31,7 +31,7 @@ public class LoginController {
     }
 
     @PostMapping("/save")
-    public Mono<UserInfoDto> authorized(@AuthenticationPrincipal User currentUser, UserInfoRequest userData) {
+    public Mono<UserInfoDto> authorized(User currentUser, UserInfoRequest userData) {
         // FIXME :: 하드코딩
         return userInfoService.saveUser(userData, "test@test.co.kr");
     }

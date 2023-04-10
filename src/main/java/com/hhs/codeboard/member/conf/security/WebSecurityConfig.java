@@ -5,6 +5,8 @@ import com.hhs.codeboard.member.conf.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
@@ -24,28 +26,36 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public ReactiveAuthenticationManager authenticationManager() {
+        return new JwtAuthenticationManager();
+    }
+
+    @Bean
     public WebSecurityCustomizer configure() {
         return (web) -> web.ignoring().requestMatchers(
                 "/v3/api-docs/**",
-                "/swagger-ui/**",
+                "/webjars/swagger-ui/**",
                 "/api/v1/login" // 임시
         );
     }
 
     @Bean
-    public SecurityWebFilterChain filter(ServerHttpSecurity http, TokenAuthService tokenAuthService) throws Exception {
+    public SecurityWebFilterChain filter(ServerHttpSecurity http, TokenAuthService tokenAuthService, ReactiveAuthenticationManager authenticationManager) throws Exception {
         http.authorizeExchange()
 //                .pathMatchers("/**").permitAll()
                 .pathMatchers("/private/**").authenticated()
                 .pathMatchers("/public/**").permitAll()
+                .pathMatchers("/webjars/**").permitAll()
                 .pathMatchers("/**").denyAll()
+
 //                .pathMatchers("/api").authenticated()
                 .and()
                 .csrf().disable()
                 .formLogin().disable()
                 .httpBasic().disable()
                 .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
-                .addFilterAt(new JwtAuthFilter(tokenAuthService), SecurityWebFiltersOrder.HTTP_BASIC);
+                .authenticationManager(authenticationManager)
+                .addFilterAt(new JwtAuthFilter(tokenAuthService), SecurityWebFiltersOrder.AUTHENTICATION);
 
 //        http.authorizeRequests()
 //                .requestMatchers("/**").denyAll()

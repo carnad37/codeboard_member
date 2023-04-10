@@ -40,14 +40,14 @@ public interface TokenAuthService {
      * @param loginProcess
      * @return
      */
-    Mono<AuthDto> authentication(ServerWebExchange exchange, Consumer<AuthDto> loginProcess);
+    Mono<AuthDto> authentication(ServerWebExchange exchange);
 
     /**
      * accessToken 생성
      * @param email
      * @return
      */
-    String getAccessToken(String email);
+    Mono<String> getAccessToken(String email);
 
     /**
      * refreshToken 생성

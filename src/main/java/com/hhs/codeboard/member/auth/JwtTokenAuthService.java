@@ -103,12 +103,13 @@ public class JwtTokenAuthService implements TokenAuthService {
 
 
     @Override
-    public String getAccessToken(String email) {
+    public Mono<String> getAccessToken(String email) {
         // 토큰 생성
-        return JWT.create().withHeader(this.header)
+        return Mono.just(JWT.create().withHeader(this.header)
                 .withSubject(email)
                 .withIssuedAt(Instant.now().atZone(this.zoneId).toInstant())
-                .sign(algorithm);
+                .sign(algorithm)
+        );
     }
 
     @Override
@@ -129,12 +130,7 @@ public class JwtTokenAuthService implements TokenAuthService {
      * @param accessToken
      * @param refreshToken
      */
-    @Override
     public Mono<AuthDto> tokenProcess(String accessToken, String refreshToken) {
-       return this.tokenProcess(accessToken, refreshToken, null);
-    }
-
-    private <T> Mono<AuthDto> tokenProcess(String accessToken, String refreshToken, Consumer<AuthDto> loginProcess) {
         if (!StringUtils.hasText(accessToken) || !StringUtils.hasText(refreshToken)) {
             return Mono.just(EMPTY_AUTH);
         }
@@ -146,45 +142,36 @@ public class JwtTokenAuthService implements TokenAuthService {
 
         //토큰정보는 토큰이 재생성됬을시에만
         //tokenProcess로 담아준다.
-//        return Mono.just(requestData)
-//                .flatMap(data->{
-//                    DecodedJWT decodedJWT = verifier.verify(data.getAccessToken());
-//
-//                    // 파싱한 토큰의 정보로 만료된 토큰인지 위조된 토큰인지를 확인한다.
-//                    // 생성된지 30분 이상된 토큰인지 확인
-//                    if (!Instant.now().isAfter(decodedJWT.getIssuedAtAsInstant().plus(30, ChronoUnit.MINUTES))) {
-//                        // 만료된 accessToken일경우, refresh토큰으로 체크
-//                        return Mono.defer(()->redisUserOperation.opsForValue().get(data.getRefreshToken()))
-//                                .flatMap(dbEmail-> {
-//                                    Mono<AuthDto> result = tokenProvider(AuthDto.builder()
-//                                            .email(dbEmail)
-//                                            .build());
-//                                    log.info("checker!!!!");
-//                                    return result;
-//                                });
-//                    }
-//
-//                    // 각 모듈에서 로그인할때 쓰일,
-//                    // 회원정보를 담아서 리턴
-//                    return Mono.fromSupplier(()->{
-//                        AuthDto autoDto = AuthDto.builder().email(decodedJWT.getSubject()).build();
-//                        if (loginProcess != null) loginProcess.accept(autoDto);
-//                        return autoDto;
-//                    });
-//                })
-//                .doOnError((e)->log.error(e.getMessage()));
+        return Mono.just(requestData)
+                .flatMap(data->{
+                    DecodedJWT decodedJWT = verifier.verify(data.getAccessToken());
 
-        Mono<DecodedJWT> parseMono = Mono.just(requestData)
-                .map(data->verifier.verify(data.getAccessToken()));
+                    // 파싱한 토큰의 정보로 만료된 토큰인지 위조된 토큰인지를 확인한다.
+                    // 생성된지 30분 이상된 토큰인지 확인
+                    if (Instant.now().isAfter(decodedJWT.getIssuedAtAsInstant().plus(30, ChronoUnit.MINUTES))) {
+                        // 만료된 accessToken일경우, refresh토큰으로 체크
+                        return redisUserOperation.opsForValue().get(data.getRefreshToken())
+                                .flatMap(dbEmail-> {
+                                    return tokenProvider(AuthDto.builder()
+                                            .email(dbEmail)
+                                            .build());
+                                })
+                                .doOnSuccess((dto)->{
+                                    log.info("email : {}", dto.getEmail());
+                                    log.info("access token : {}", dto.getAccessToken());
+                                    log.info("refresh token : {}", dto.getRefreshToken());
+                                });
+                    }
 
-        parseMono.filter(data->!Instant.now().isAfter(data.getIssuedAtAsInstant().plus(30, ChronoUnit.MINUTES))) // 만료된 토큰인경우
-                .flatMap(data->redisUserOperation.opsForValue().get(data))  // 만료된 토큰이므로 재조회
-                .flatMap(data->tokenProvider(AuthDto.builder().email(data).build()))
+                    // 각 모듈에서 로그인할때 쓰일,
+                    // 회원정보를 담아서 리턴
+                    return Mono.fromSupplier(()->{
+                        AuthDto authDto = AuthDto.builder().email(decodedJWT.getSubject()).build();
+                        return authDto;
+                    });
+                })
+                .doOnError((e)->log.error(e.getMessage()));
 
-//                .switchIfEmpty(Mono.defer(()->parseMono));
-//
-//                .flatMap(data->tokenProvider(data))
-//                .doOnError((e)->log.error(e.getMessage()));
     }
 
     /**
@@ -194,16 +181,13 @@ public class JwtTokenAuthService implements TokenAuthService {
      */
     private Mono<AuthDto> tokenProvider (AuthDto authDto) {
 
-
-//        return Mono.just(authDto)
-//            .zip(this.getAccessToken(authDto.getEmail()), this.getRefreshToken(authDto.getEmail()))
-//            .flatMap(tup->
-//                Mono.fromSupplier(()->{
-//                    authDto.setAccessToken(tup.getT1());
-//                    authDto.setRefreshToken(tup.getT2());
-//                    return authDto;
-//                })
-//            );
+        return getAccessToken(authDto.getEmail())
+                .zipWith(getRefreshToken(authDto.getEmail()))
+                .map(tuple -> {
+                    authDto.setAccessToken(tuple.getT1());
+                    authDto.setRefreshToken(tuple.getT2());
+                    return authDto;
+                });
     }
 
     /**
@@ -219,11 +203,10 @@ public class JwtTokenAuthService implements TokenAuthService {
     /**
      * 인증처리
      * @param exchange
-     * @param loginProcess
      * @return
      */
     @Override
-    public Mono<AuthDto> authentication(ServerWebExchange exchange, Consumer<AuthDto> loginProcess) {
+    public Mono<AuthDto> authentication(ServerWebExchange exchange) {
         // 토큰 파싱을 통해 유저정보 획득
         ServerHttpRequest request = exchange.getRequest();
         String accessToken;
@@ -240,7 +223,7 @@ public class JwtTokenAuthService implements TokenAuthService {
             return Mono.just(EMPTY_AUTH);
         }
 
-        return this.tokenProcess(accessToken, refreshToken, loginProcess);
+        return this.tokenProcess(accessToken, refreshToken);
     }
 
     protected enum JWTheader {
