@@ -6,14 +6,11 @@
 #    password: testdb#
 spring:
   r2dbc:
-    url: r2dbc:mariadb://193.168.123.2:33001
+    url: r2dbc:mariadb://localhost:33660/codeboard
     username: root
     password: testdb#
     name: codeboard_member
-  data:
-    redis:
-      host: 193.168.123.2
-      port: 34001
+
 #  reactive:
 #    redis:
 #      host: 193.168.123.2

@@ -37,21 +37,8 @@ public class UserInfoService implements UserInterface{
         // 조회결과가 없거나, 조회된 토큰이 만료되었을 수가 있음.
         // 만약 없을경우 DB조회
         return userInfoRepo.findByEmail(email)
-            .flatMap(entity->{
-                if (passwordEncoder.matches(passwd, entity.getPasswd())) {
-                    return Mono.zip(tokenAuthService.getAccessToken(entity.getEmail()), tokenAuthService.getRefreshToken(entity.getEmail()))
-                        .map(tup-> AuthDto.builder()
-                            .email(entity.getEmail())
-                            .accessToken(tup.getT1())
-                            .refreshToken(tup.getT2())
-                            .build()
-                        );
-                } else {
-                    return Mono.fromSupplier(()->AuthDto.builder()
-                            .message("not find user")
-                            .build());
-                }
-            });
+                .mapNotNull(entity-> AuthDto.builder().email(entity.getEmail()).build())
+                .switchIfEmpty(Mono.just(AuthDto.builder().build()));
     }
 
     public Mono<UserInfoDto> selectUser(String email) throws Exception {
