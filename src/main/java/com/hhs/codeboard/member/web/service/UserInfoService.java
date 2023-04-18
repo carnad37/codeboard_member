@@ -1,7 +1,5 @@
 package com.hhs.codeboard.member.web.service;
 
-import com.hhs.codeboard.member.auth.JwtTokenAuthService;
-import com.hhs.codeboard.member.auth.TokenAuthService;
 import com.hhs.codeboard.member.data.AuthDto;
 import com.hhs.codeboard.member.data.repository.UserInfoRepository;
 import com.hhs.codeboard.member.data.user.dto.UserInfoDto;
@@ -28,17 +26,13 @@ public class UserInfoService implements UserInterface{
 
     private final BCryptPasswordEncoder passwordEncoder;
 
-    private final TokenAuthService tokenAuthService;
-
     private final R2dbcEntityTemplate template;
 
     public Mono<AuthDto> loginUser(String email, String passwd) throws Exception {
-        // 1차 조회시 redis를 조회 (refresh token 만료전까지)
-        // 조회결과가 없거나, 조회된 토큰이 만료되었을 수가 있음.
-        // 만약 없을경우 DB조회
         return userInfoRepo.findByEmail(email)
-                .mapNotNull(entity-> AuthDto.builder().email(entity.getEmail()).build())
-                .switchIfEmpty(Mono.just(AuthDto.builder().build()));
+            .filter(entity -> entity != null && passwordEncoder.matches(passwd, entity.getPasswd()))
+            .map(entity-> AuthDto.builder().email(entity.getEmail()).build())
+            .switchIfEmpty(Mono.just(AuthDto.builder().message("이메일 또는 비밀번호가 틀렸습니다.").build()));
     }
 
     public Mono<UserInfoDto> selectUser(String email) throws Exception {
@@ -48,15 +42,6 @@ public class UserInfoService implements UserInterface{
         return userInfoRepo.findByEmail(email)
                 .map(entity -> toDTO(entity));
     }
-
-//    public Mono<UserInfoDto> selectUserByToken(String token) throws Exception {
-//        // 1차 조회시 redis를 조회 (refresh token 만료전까지)
-//        // TODO :: Redis get UserInfo by token
-//        // 조회결과가 없거나, 조회된 토큰이 만료되었을 수가 있음.
-//        // 만약 없을경우 DB조회
-//        // TODO :: DB get UserInfo by token
-//        tokenAuthService.authorized();?
-//    }
 
     public Mono<UserInfoDto> saveUser(UserInfoRequest userInfoDto, String editUser) {
         // 유저정보가 업데이트 되는경우 반드시 패스워드 비교필요.
