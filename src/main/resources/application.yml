@@ -8,3 +8,6 @@ spring:
 server:
   port: 10098
 
+codeboard:
+  auth: http://localhost:10100
+  member: http://localhost:10098

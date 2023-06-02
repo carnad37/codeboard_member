@@ -43,9 +43,7 @@ public class UserInfoService implements UserInterface{
                 .map(entity -> toDTO(entity));
     }
 
-    public Mono<UserInfoDto> saveUser(UserInfoRequest userInfoDto, String editUser) {
-        // 유저정보가 업데이트 되는경우 반드시 패스워드 비교필요.
-        // 해당기능은 무조건 private로 진행되어야함.
+    public Mono<UserInfoDto> saveUser(UserInfoRequest userInfoDto) {
         UserInfoEntity entity = new UserInfoEntity();
         entity.setEmail(userInfoDto.getEmail());
         entity.setPasswd(passwordEncoder.encode(userInfoDto.getPasswd()));
