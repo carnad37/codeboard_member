@@ -5,10 +5,11 @@ import com.hhs.codeboard.member.data.repository.UserInfoRepository;
 import com.hhs.codeboard.member.data.user.dto.UserInfoDto;
 import com.hhs.codeboard.member.data.user.dto.request.UserInfoRequest;
 import com.hhs.codeboard.member.data.user.entity.UserInfoEntity;
+import com.hhs.codeboard.member.enumeration.ErrorCode;
+import com.hhs.codeboard.member.expt.AppException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.DependsOn;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -52,7 +53,20 @@ public class UserInfoService implements UserInterface{
         entity.setRegDate(LocalDateTime.now());
 
         return userInfoRepo.save(entity)
-                .map(this::toDTO);
+                .map(tEntity->{
+                    UserInfoDto infoDto = new UserInfoDto();
+                    infoDto.setNickname(entity.getNickname());
+                    return infoDto;
+                })
+                .onErrorResume(error->{
+                    if (error instanceof DataIntegrityViolationException) {
+                        // 아이디 중복 오류
+                        return Mono.error(AppException.of(ErrorCode.DUPLICATE_ID));
+                    } else {
+                        // 그외의 오류
+                        return Mono.error(AppException.of(ErrorCode.UNKNOWN));
+                    }
+                });
     }
 
     private UserInfoEntity toEntity(UserInfoDto userInfoDto) {

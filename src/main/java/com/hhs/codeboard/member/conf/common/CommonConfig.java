@@ -17,4 +17,5 @@ public class CommonConfig {
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         return modelMapper;
     }
+
 }
