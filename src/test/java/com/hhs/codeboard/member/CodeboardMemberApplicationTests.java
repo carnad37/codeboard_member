@@ -17,6 +17,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @AutoConfigureMockMvc
 @SpringBootTest
@@ -24,69 +25,83 @@ class CodeboardMemberApplicationTests {
 
 //	@Autowired
 //	private MockMvc mockMvc;
-
-	@Autowired
-	private UserInfoRepository userInfoRepository;
-
-	@Test
-	void connectTest() {
-		userInfoRepository.findById((long)1);
-	}
-
-
-
+//
+//	@Autowired
+//	private UserInfoRepository userInfoRepository;
+//
 //	@Test
-//	void loginTest() throws Exception{
+//	void connectTest() {
+//		userInfoRepository.findById((long)1);
+//	}
 //
-//		this.mockMvc.perform(
-//				post("/gw/login")
-//						.param("email", "test@test.co.kr")
-//						.param("password", "password")
-//		).andExpect(status().isOk()).andDo(print());
 //
+//
+////	@Test
+////	void loginTest() throws Exception{
+////
+////		this.mockMvc.perform(
+////				post("/gw/login")
+////						.param("email", "test@test.co.kr")
+////						.param("password", "password")
+////		).andExpect(status().isOk()).andDo(print());
+////
+////	}
+//
+//	@Test
+//	void reactiveJavaTest() throws Exception {
+//
+//		Mono<String> mono = Mono.just("1");
+//		List<String> test = new ArrayList<>();
+//		mono.subscribe(iMono->{
+//			Mono<String> iiMono = Mono.just("2");
+//			iiMono.subscribe(iiiMono->{
+//				test.add(iiiMono);
+//			});
+//			test.add(iMono);
+//		});
+//		test.stream().forEach(System.out::println);
+//	}
+//
+//
+//	@Test
+//	void testMutate() {
+//		ClientHttpRequest request = new AbstractClientHttpRequest() {
+//			@Override
+//			protected OutputStream getBodyInternal(HttpHeaders headers) throws IOException {
+//				return null;
+//			}
+//
+//			@Override
+//			protected ClientHttpResponse executeInternal(HttpHeaders headers) throws IOException {
+//				return null;
+//			}
+//
+//			@Override
+//			public HttpMethod getMethod() {
+//				return null;
+//			}
+//
+//			@Override
+//			public URI getURI() {
+//				return null;
+//			}
+//		};
+//
+//		request.getHeaders().remove("1");
 //	}
 
 	@Test
-	void reactiveJavaTest() throws Exception {
-
-		Mono<String> mono = Mono.just("1");
-		List<String> test = new ArrayList<>();
-		mono.subscribe(iMono->{
-			Mono<String> iiMono = Mono.just("2");
-			iiMono.subscribe(iiiMono->{
-				test.add(iiiMono);
-			});
-			test.add(iMono);
-		});
-		test.stream().forEach(System.out::println);
-	}
-
-
-	@Test
-	void testMutate() {
-		ClientHttpRequest request = new AbstractClientHttpRequest() {
-			@Override
-			protected OutputStream getBodyInternal(HttpHeaders headers) throws IOException {
-				return null;
-			}
-
-			@Override
-			protected ClientHttpResponse executeInternal(HttpHeaders headers) throws IOException {
-				return null;
-			}
-
-			@Override
-			public HttpMethod getMethod() {
-				return null;
-			}
-
-			@Override
-			public URI getURI() {
-				return null;
-			}
-		};
-
-		request.getHeaders().remove("1");
+	public void test() {
+		Pattern emailCheck = Pattern.compile("^(([^<>()[\\\\]\\\\.,;:\\s@]+(\\.[^<>()[\\\\]\\\\.,;:\\s@]+)*))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))$");
+		String test = "aaaa@";
+		String test1 = "Test.com";
+		String test2 = ".\\";
+		System.out.println(Pattern.matches("^" +
+				"(([^<>()[\\\\]\\\\.,;:\\s@]+(\\.[^<>()[\\\\]\\\\.,;:\\s@]+)*))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))$", test));
+		System.out.println(Pattern.matches("^" +
+				"((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))$", test1));
+//		System.out.println(Pattern.matches("^(([^<>()[\\\\]\\.,;:\\s@\"]+(\\.[^<>()[\\\\]\\\\.,;:\s@\"]+)*)|(\".+\"))@((\\\\[[0-9]{1,3}\\\\.[0-9]{1,3}\\\\.[0-9]{1,3}\\\\.[0-9]{1,3}])|(([a-zA-Z\\-0-9]+\\\\.)+[a-zA-Z]{2,}))$", test));
+//		System.out.println(Pattern.matches("^(([^<>()[\\\\]\\\\.,;:\\s@\"]+(\\.[^<>()[\\\\]\\\\.,;:\s@\"]+)*)|(\".+\"))@((\\\\[[0-9]{1,3}\\\\.[0-9]{1,3}\\\\.[0-9]{1,3}\\\\.[0-9]{1,3}])|(([a-zA-Z\\-0-9]+\\\\.)+[a-zA-Z]{2,}))$", test1));
 	}
 
 }

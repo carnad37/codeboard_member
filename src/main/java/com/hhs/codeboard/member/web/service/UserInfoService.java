@@ -7,7 +7,9 @@ import com.hhs.codeboard.member.data.user.dto.request.UserInfoRequest;
 import com.hhs.codeboard.member.data.user.entity.UserInfoEntity;
 import com.hhs.codeboard.member.enumeration.ErrorCode;
 import com.hhs.codeboard.member.expt.AppException;
+import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
+import org.checkerframework.checker.regex.qual.Regex;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -44,12 +47,31 @@ public class UserInfoService implements UserInterface{
                 .map(entity -> toDTO(entity));
     }
 
+    private final Pattern emailCheck = Pattern.compile("^(([^<>()[\\\\]\\\\.,;:\\s@]+(\\.[^<>()[\\\\]\\\\.,;:\\s@]+)*))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))$");
+    private final Pattern passCheck = Pattern.compile("(?!((?:[A-Za-z]+)|(?:[~!@#$%^&*()_+=]+)|(?:[0-9]+))$)[A-Za-z\\\\d~!@#$%^&*()_+=]{8,}$");
+    private final Pattern nickNameCheck = Pattern.compile("[A-Za-z|\\d]*");
+
     public Mono<UserInfoDto> saveUser(UserInfoRequest userInfoDto) {
         UserInfoEntity entity = new UserInfoEntity();
+
+        // member join validate
+        if (StringUtils.isEmpty(userInfoDto.getEmail())
+                || !emailCheck.matcher(userInfoDto.getEmail()).matches()) {
+            return Mono.error(AppException.of(ErrorCode.JOIN_INCORRECT_EMAIL));
+        } else if (StringUtils.isEmpty(userInfoDto.getPasswd())
+                || !passCheck.matcher(userInfoDto.getEmail()).matches()) {
+            return Mono.error(AppException.of(ErrorCode.JOIN_INCORRECT_PASSWD));
+        } else if (StringUtils.isEmpty(userInfoDto.getNickname())) {
+//                && nickNameCheck.matcher(userInfoDto.getNickname()).matches()) {
+            return Mono.error(AppException.of(ErrorCode.JOIN_INCORRECT_NICKNAME));
+        }
+
         entity.setEmail(userInfoDto.getEmail());
         entity.setPasswd(passwordEncoder.encode(userInfoDto.getPasswd()));
         entity.setNickname(userInfoDto.getNickname());
-        entity.setUserType(userInfoDto.getUserType());
+//        entity.setUserType(userInfoDto.getUserType());
+        // 유저타입은 고정
+        entity.setUserType("N");
         entity.setRegDate(LocalDateTime.now());
 
         return userInfoRepo.save(entity)

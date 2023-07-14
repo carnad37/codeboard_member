@@ -12,6 +12,10 @@ public class AppException extends RuntimeException {
         return new AppException(errorCode);
     }
 
+    public static AppException ofThrow (ErrorCode errorCode) {
+        throw new AppException(errorCode);
+    }
+
     private final ErrorCode errorCode;
 
 }
