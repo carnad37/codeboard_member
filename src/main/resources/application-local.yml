@@ -1,0 +1,12 @@
+spring:
+  r2dbc:
+    url: r2dbc:mariadb://localhost:20001/codeboard_member
+    username: root
+    password: testdb#
+    name: codeboard_member
+
+server:
+  port: 10098
+
+codeboard:
+  auth: http://localhost:10100
