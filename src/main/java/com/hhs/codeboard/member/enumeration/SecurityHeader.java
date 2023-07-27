@@ -1,6 +1,6 @@
 package com.hhs.codeboard.member.enumeration;
 
-import com.hhs.codeboard.member.dto.User;
+import com.hhs.codeboard.member.data.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;

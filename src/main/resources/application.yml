@@ -1,6 +1,13 @@
 spring:
-  datasource:
-    driver-class-name: org.mariadb.jdbc.Driver
-    url: jdbc:mariadb://localhost:33660/codeboard?serverTimezone=UTC
+  r2dbc:
+    url: r2dbc:mariadb://localhost:33660/codeboard
     username: root
     password: testdb#
+    name: codeboard_member
+
+server:
+  port: 10098
+
+codeboard:
+  auth: http://localhost:10100
+  member: http://localhost:10098
