@@ -20,6 +20,8 @@ public class UserInfoDto {
 
     private String userType;
 
+    private Long userSeq;
+
     @JsonIgnore
     private String modUser;
 

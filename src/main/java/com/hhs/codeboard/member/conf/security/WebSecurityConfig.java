@@ -2,9 +2,8 @@ package com.hhs.codeboard.member.conf.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -13,7 +12,8 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
 
 @Configuration
-@EnableWebFluxSecurity
+//@EnableWebFluxSecurity
+@EnableReactiveMethodSecurity
 public class WebSecurityConfig {
 
     @Bean
@@ -34,7 +34,7 @@ public class WebSecurityConfig {
                 .pathMatchers("/v3/api-docs/**").permitAll()
                 .pathMatchers("/private/**").authenticated()
                 .pathMatchers("/api").authenticated()
-                .pathMatchers("/**").denyAll()
+//                .pathMatchers("/**").denyAll()
                 .and()
 
                 .csrf().disable()
@@ -42,7 +42,7 @@ public class WebSecurityConfig {
                 .httpBasic().disable()
 
                 .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
-                .authenticationManager(authenticationManager)
+//                .authenticationManager(authenticationManager)
                 .addFilterAt(new AuthFilter(), SecurityWebFiltersOrder.AUTHENTICATION);
 
         return http.build();

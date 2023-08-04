@@ -73,7 +73,7 @@ public class CommonResponse<T> {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private T data;
 
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private List<T> dataList;
 
     private int httpCode = HttpStatus.OK.value();

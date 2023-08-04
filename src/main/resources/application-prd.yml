@@ -10,3 +10,6 @@ server:
 
 codeboard:
   auth: http://codeboard-auth:8080
+  recaptcha:
+    url: https://www.google.com/recaptcha/api/siteverify
+    key: #

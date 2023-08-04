@@ -18,4 +18,6 @@ public class UserInfoRequest {
 
     private String userType;
 
+    private String token;
+
 }

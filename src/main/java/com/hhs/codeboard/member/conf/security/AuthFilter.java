@@ -28,6 +28,7 @@ public class AuthFilter implements WebFilter {
         if (StringUtils.hasText(email)) {
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(AuthDto.builder().email(email).build(), null, null);
             return chain.filter(exchange).contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth));
+
         } else {
             return chain.filter(exchange);
         }

@@ -19,12 +19,12 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class DefaultWebClient {
 
-    @Value("{codeboard.member}")
-    private String memberUrl;
+    @Value("${codeboard.recaptcha.url}")
+    private String recaptchaUrl;
 
-    @Bean
-    public WebClient memberClient() {
-        return webClientBuild(memberUrl);
+    @Bean(name = "recaptchaClient")
+    public WebClient recaptchaClient() {
+        return webClientBuild(recaptchaUrl);
     }
 
     private WebClient webClientBuild(String url) {
