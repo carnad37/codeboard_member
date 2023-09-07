@@ -37,3 +37,5 @@ contextWrite로 인증정보를 Filter에 추가해주게되면 차후에 로그
 
 :  @Module을 생성해서 Module을 파라미터로 입력받는다. 해당메소드가 적용된 컨트롤러를 스캔하여,
 Spring security에서 접근제한 처리를 진행한다.
+API cookie관련. 요청에대한 응답진행후, 새로고침시 api.codeboard.com의 쿠키값이 삭제되는 문제가 있다. 요청마다 쿠키를 담아줘야할것으로 보인다.
+
