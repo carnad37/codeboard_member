@@ -1,6 +1,5 @@
 package com.hhs.codeboard.member.data;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,6 +13,8 @@ public class AuthDto {
 
     private String email;
     private String passwd;
+    private String nickname;
+    private Long userSeq;
     private String refreshToken;
     private String accessToken;
     private String message;

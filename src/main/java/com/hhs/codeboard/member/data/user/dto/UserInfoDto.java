@@ -2,6 +2,7 @@ package com.hhs.codeboard.member.data.user.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,6 +17,7 @@ public class UserInfoDto {
 
     private String nickname;
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String passwd;
 
     private String userType;

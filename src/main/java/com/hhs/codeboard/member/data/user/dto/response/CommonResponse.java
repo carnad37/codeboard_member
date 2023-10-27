@@ -3,6 +3,7 @@ package com.hhs.codeboard.member.data.user.dto.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.hhs.codeboard.member.enumeration.ErrorCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import java.util.List;
 
 @Getter
+@NoArgsConstructor
 public class CommonResponse<T> {
 
     /**
@@ -31,6 +33,25 @@ public class CommonResponse<T> {
         this(page, message);
         this.alertFlag = alertFlag;
     }
+
+    /**
+     * 단순 리스트 컨텐츠 응답용
+     * @param data
+     */
+    public CommonResponse(List<T> data) {
+        this.dataList = data;
+    }
+
+    public CommonResponse(List<T> data, String message) {
+        this(data);
+        this.message = message;
+    }
+
+    public CommonResponse(List<T> data, String message, boolean alertFlag) {
+        this(data, message);
+        this.alertFlag = alertFlag;
+    }
+
 
     /**
      * 단일 컨텐츠 응답용

@@ -9,7 +9,6 @@ import com.hhs.codeboard.member.enumeration.ErrorCode;
 import com.hhs.codeboard.member.expt.AppException;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
-import org.checkerframework.checker.regex.qual.Regex;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
@@ -35,7 +34,12 @@ public class UserInfoService implements UserInterface{
     public Mono<AuthDto> loginUser(String email, String passwd) throws Exception {
         return userInfoRepo.findByEmail(email)
             .filter(entity -> entity != null && passwordEncoder.matches(passwd, entity.getPasswd()))
-            .map(entity-> AuthDto.builder().email(entity.getEmail()).build())
+            .map(entity-> AuthDto.builder()
+                    .email(entity.getEmail())
+                    .nickname(entity.getNickname())
+                    .userSeq(entity.getUserSeq())
+                    .build()
+            )
             .switchIfEmpty(Mono.just(AuthDto.builder().message("이메일 또는 비밀번호가 틀렸습니다.").build()));
     }
 
@@ -44,7 +48,15 @@ public class UserInfoService implements UserInterface{
         // 조회결과가 없거나, 조회된 토큰이 만료되었을 수가 있음.
         // 만약 없을경우 DB조회
         return userInfoRepo.findByEmail(email)
-                .map(entity -> toDTO(entity));
+                .map(this::toDTO);
+    }
+
+    public Mono<UserInfoDto> selectUserPublic(String email) throws Exception {
+        // 1차 조회시 redis를 조회 (refresh token 만료전까지)
+        // 조회결과가 없거나, 조회된 토큰이 만료되었을 수가 있음.
+        // 만약 없을경우 DB조회
+        return userInfoRepo.findByEmail(email)
+                .map(this::toDTO);
     }
 
     private final Pattern emailCheck = Pattern.compile("^(([^<>()[\\\\]\\\\.,;:\\s@]+(\\.[^<>()[\\\\]\\\\.,;:\\s@]+)*))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))$");
@@ -96,7 +108,13 @@ public class UserInfoService implements UserInterface{
     }
 
     private UserInfoDto toDTO(UserInfoEntity userInfoEntity) {
-        return modelMapper.map(userInfoEntity, UserInfoDto.class);
+        UserInfoDto result = modelMapper.map(userInfoEntity, UserInfoDto.class);
+        result.setPasswd(null);
+        result.setRegDate(null);
+        result.setModUser(null);
+        result.setModDate(null);
+        result.setDelDate(null);
+        return result;
     }
 
     @Override

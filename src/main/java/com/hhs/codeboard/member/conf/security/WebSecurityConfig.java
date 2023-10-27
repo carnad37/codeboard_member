@@ -30,6 +30,7 @@ public class WebSecurityConfig {
     public SecurityWebFilterChain filter(ServerHttpSecurity http, ReactiveAuthenticationManager authenticationManager) throws Exception {
         http.authorizeExchange()
                 .pathMatchers("/public/**").permitAll()
+                .pathMatchers("/gw/**").permitAll()
                 .pathMatchers("/webjars/**").permitAll()
                 .pathMatchers("/v3/api-docs/**").permitAll()
                 .pathMatchers("/private/**").authenticated()

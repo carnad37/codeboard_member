@@ -2,6 +2,7 @@ package com.hhs.codeboard.member.web.controller;
 
 import com.hhs.codeboard.member.data.AuthDto;
 import com.hhs.codeboard.member.data.user.dto.UserInfoDto;
+import com.hhs.codeboard.member.data.user.dto.response.CommonResponse;
 import com.hhs.codeboard.member.web.service.UserInfoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -15,8 +16,9 @@ public class GwController {
     private final UserInfoService userInfoService;
 
     @PostMapping("/login")
-    public Mono<AuthDto> userInfo(@RequestBody UserInfoDto user) throws Exception {
-        return userInfoService.loginUser(user.getEmail(), user.getPasswd());
+    public Mono<CommonResponse<AuthDto>> userInfo(@RequestBody UserInfoDto user) throws Exception {
+        Mono<AuthDto> result =  userInfoService.loginUser(user.getEmail(), user.getPasswd());
+        return result.map(CommonResponse::new);
     }
 
 }

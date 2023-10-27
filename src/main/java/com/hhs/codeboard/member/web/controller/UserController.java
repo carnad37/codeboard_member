@@ -1,24 +1,14 @@
 package com.hhs.codeboard.member.web.controller;
 
 import com.hhs.codeboard.member.data.AuthDto;
-import com.hhs.codeboard.member.data.User;
 import com.hhs.codeboard.member.data.user.dto.UserInfoDto;
 import com.hhs.codeboard.member.data.user.dto.request.UserInfoRequest;
 import com.hhs.codeboard.member.data.user.dto.response.CommonResponse;
-import com.hhs.codeboard.member.data.user.entity.UserInfoEntity;
-import com.hhs.codeboard.member.enumeration.ErrorCode;
-import com.hhs.codeboard.member.expt.AppException;
 import com.hhs.codeboard.member.web.service.RecaptchaService;
 import com.hhs.codeboard.member.web.service.UserInfoService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 /**
@@ -27,17 +17,13 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/public/user")
 @RestController
 @RequiredArgsConstructor
-public class LoginController {
+public class UserController {
 
 
     private final UserInfoService userInfoService;
 
     private final RecaptchaService recaptchaService;
 
-    @PostMapping("/login")
-    public Mono<AuthDto> userInfo(@RequestBody UserInfoDto user) throws Exception {
-        return userInfoService.loginUser(user.getEmail(), user.getPasswd());
-    }
 
     @PostMapping("/save")
     public Mono<CommonResponse<UserInfoDto>> saveUser(@RequestBody UserInfoRequest userData) {
