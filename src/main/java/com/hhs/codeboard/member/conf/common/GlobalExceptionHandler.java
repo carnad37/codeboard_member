@@ -31,6 +31,8 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
         // 여기서 ex의 클래스 체크를해서 분기해도 되나... 원하는거랑은 좀 다른듯
         ErrorCode errorCode;
+        log.error("GlobalExceptionHandler :: cause : {}", ex.getCause().toString());
+        log.error("GlobalExceptionHandler :: message : {}", ex.getMessage());
         if (ex instanceof AppException ae) {
             errorCode = ae.getErrorCode();
         } else {
