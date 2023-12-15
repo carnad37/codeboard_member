@@ -4,6 +4,9 @@ import com.hhs.codeboard.member.data.AuthDto;
 import com.hhs.codeboard.member.data.user.dto.UserInfoDto;
 import com.hhs.codeboard.member.data.user.dto.request.UserInfoRequest;
 import com.hhs.codeboard.member.data.user.dto.response.CommonResponse;
+import com.hhs.codeboard.member.enumeration.ErrorCode;
+import com.hhs.codeboard.member.expt.AppException;
+import com.hhs.codeboard.member.expt.ErrorHandleUtil;
 import com.hhs.codeboard.member.web.service.RecaptchaService;
 import com.hhs.codeboard.member.web.service.UserInfoService;
 import lombok.RequiredArgsConstructor;
@@ -32,18 +35,21 @@ public class UserController {
          * 2. 연동 가입 : google이나 네이버등 연동 가입만을 허용해둔다. 다른 포털에 이미 가입된 계정이기에, 쓸데없는 인증과정이 필요가 없다.
          */
         // reCaptcha로 처리
+//        Mono<UserInfoDto> result = userInfoService.saveUser(userData);
+//        return result.map(CommonResponse::new)
+//                .onErrorResume(ErrorHandleUtil::errorResponse);
         return recaptchaService.checkRecaptcha(userData.getToken())
                 .flatMap(bool-> {
                     if (bool) {
                         // 통과
                         Mono<UserInfoDto> result = userInfoService.saveUser(userData);
-                        return result.map(CommonResponse::new);
+                        return result.map(CommonResponse::new)
+                                .onErrorResume(ErrorHandleUtil::errorResponse);
                     } else {
                         // 실패
-                        return Mono.just(new CommonResponse<>(HttpStatus.BAD_REQUEST.value(), "0000", "reCAPTCHA인증에 실패하였습니다", true));
+                        return ErrorHandleUtil.errorResponse(ErrorCode.RE_CAPTCHA);
                     }
                 });
-
     }
 
 

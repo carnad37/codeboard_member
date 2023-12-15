@@ -39,7 +39,7 @@ public class RecaptchaServiceImpl implements RecaptchaService{
                 .retrieve()
                 .bodyToMono(MAP_TYPE_REF)
                 .map(target->{
-                    Boolean result = Boolean.valueOf((String) target.get("success"));
+                    Boolean result = (Boolean) target.get("success");
                     return result;
                 });
 //                .bodyToMono(RecaptchaResponse.class)

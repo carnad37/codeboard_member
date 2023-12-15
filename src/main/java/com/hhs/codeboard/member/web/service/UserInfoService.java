@@ -60,7 +60,7 @@ public class UserInfoService implements UserInterface{
     }
 
     private final Pattern emailCheck = Pattern.compile("^(([^<>()[\\\\]\\\\.,;:\\s@]+(\\.[^<>()[\\\\]\\\\.,;:\\s@]+)*))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))$");
-    private final Pattern passCheck = Pattern.compile("(?!((?:[A-Za-z]+)|(?:[~!@#$%^&*()_+=]+)|(?:[0-9]+))$)[A-Za-z\\\\d~!@#$%^&*()_+=]{8,}$");
+    private final Pattern passCheck = Pattern.compile("(?!((?:[A-Za-z]+)|(?:[~!@#$%^&*()_+=]+)|(?:[0-9]+))$)[A-Za-z\\d~!@#$%^&*()_+=]{8,}$");
     private final Pattern nickNameCheck = Pattern.compile("[A-Za-z|\\d]*");
 
     public Mono<UserInfoDto> saveUser(UserInfoRequest userInfoDto) {
@@ -71,7 +71,7 @@ public class UserInfoService implements UserInterface{
                 || !emailCheck.matcher(userInfoDto.getEmail()).matches()) {
             return Mono.error(AppException.of(ErrorCode.JOIN_INCORRECT_EMAIL));
         } else if (StringUtils.isEmpty(userInfoDto.getPasswd())
-                || !passCheck.matcher(userInfoDto.getEmail()).matches()) {
+                || !passCheck.matcher(userInfoDto.getPasswd()).matches()) {
             return Mono.error(AppException.of(ErrorCode.JOIN_INCORRECT_PASSWD));
         } else if (StringUtils.isEmpty(userInfoDto.getNickname())) {
 //                && nickNameCheck.matcher(userInfoDto.getNickname()).matches()) {
