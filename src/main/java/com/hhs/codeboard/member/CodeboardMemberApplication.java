@@ -13,6 +13,8 @@ import reactor.blockhound.integration.StandardOutputIntegration;
 
 import java.io.FilterInputStream;
 import java.io.RandomAccessFile;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.ResourceBundle;
 
 //@SpringBootApplication(exclude = {R2dbcAutoConfiguration.class})
@@ -20,12 +22,12 @@ import java.util.ResourceBundle;
 public class CodeboardMemberApplication {
 
 	public static void main(String[] args) {
-		if (!"prd".equals(System.getProperty("spring.profiles.active"))) {
+		boolean result = Arrays.stream(args).filter((x)->!Objects.isNull(x)).map(x->x.split("spring.profiles.activ=")).anyMatch(x->x.length > 1 && !"prd".equals(x[1]));
+		if (!"prd".equals(System.getProperty("spring.profiles.active")) || result) {
 			BlockHound.install(builder -> {
 				builder.allowBlockingCallsInside(HandshakeResponse.class.getName(), "writeConnectAttributes");
 			});
 		}
-
 
 		SpringApplication.run(CodeboardMemberApplication.class, args);
 	}
