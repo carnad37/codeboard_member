@@ -1,5 +1,6 @@
 package com.hhs.codeboard.member;
 
+import com.hhs.codeboard.member.util.CommonUtil;
 import org.mariadb.r2dbc.message.client.HandshakeResponse;
 import org.mariadb.r2dbc.message.flow.AuthenticationFlow;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,8 +23,8 @@ import java.util.ResourceBundle;
 public class CodeboardMemberApplication {
 
 	public static void main(String[] args) {
-		boolean result = Arrays.stream(args).filter((x)->!Objects.isNull(x)).map(x->x.split("spring.profiles.activ=")).anyMatch(x->x.length > 1 && !"prd".equals(x[1]));
-		if (!"prd".equals(System.getProperty("spring.profiles.active")) || result) {
+
+		if (!CommonUtil.checkPrdProfiles(args)) {
 			BlockHound.install(builder -> {
 				builder.allowBlockingCallsInside(HandshakeResponse.class.getName(), "writeConnectAttributes");
 			});
